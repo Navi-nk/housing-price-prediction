@@ -1,0 +1,21 @@
+feature, description, type
+project_name, Name of project, string
+address, Address of unit sold, string
+floor_area_sqm, Area in square meters of unit, integer
+type_of_land, Type of land of unit, string (Strata|Land|Unknown)
+price, Price at which unit was sold. Target variable., integer
+contract_date, Date in which unit was sold, string formatted in "D-MMM-YYYY"
+property_type, Type of property sold, string (Condominium|Semi-Detached House|Apartment|Executive Condominium|Terrace House|Detached House)
+tenure, Number of years of lease as well as lease start date, string
+completion_date, Date of completion of project, string (Uncompleted|Uncomplete|Unknown|"YYYY"|"M/D/YYYY")
+type_of_sale, Type of sale of unit, string (Resale|New Sale|Sub Sale)
+postal_district, Postal district of unit, integer 
+postal_sector, Postal sector of unit, integer
+postal_code, Postal code of unit, integer
+region, Region of unit, string (North Region|Central Region|North East Region|East Region|West Region)
+area, Area in which unit was sold, string
+month, Month in which unit was sold, string formatted in "YYYY-M"
+latitude, Latitude in which unit was sold, float
+longitude, Longitude in which unit was sold, float
+floor_num, Floor number of unit sold parsed from address, integer or nan
+unit_num, Unit number of unit sold parsed from address, integer or nan

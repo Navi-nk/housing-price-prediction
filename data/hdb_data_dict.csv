@@ -1,0 +1,15 @@
+feature, description, type
+block, Block number, string (not integer because of blocks such as '487A')
+flat_model, Flat model, string
+flat_type, Flat type, string
+floor_area_sqm, Area in square meters of flat, float
+lease_commence_date, Year in which 99 year lease started, integer
+month, MonthYear in which flat was sold, string formatted in "YYYY-MM"
+resale_price, Price at which flat was sold. Target variable., float
+storey_range, Range of storeys where flat was sold, string
+street_name, Street name of flat sold, string
+town, Town in which flat was sold, string
+latitude, Latitude of flat sold, float
+longitude, Longitude of flat sold, float
+postal_code, Postal code of flat sold, integer
+floor, Average floor derived from storey_range, integer
