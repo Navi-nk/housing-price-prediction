@@ -80,8 +80,8 @@ column_names = [
   "unit_num"
 ]
 
-train_file = 'private_train_2.csv'
-test_file = 'private_test.csv'
+train_file = './private_train_2.csv'
+test_file = './data/private_test.csv'
 
 # train_data = read_csv(train_file, usecols=column_names).head(150000)
 train_data = read_csv(train_file, usecols=column_names)
