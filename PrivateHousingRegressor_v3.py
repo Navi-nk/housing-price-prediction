@@ -1,5 +1,3 @@
-# explore the data set
-
 import numpy
 import seaborn as sns
 
@@ -129,7 +127,7 @@ test_size = 0.33
 X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=test_size, random_state=seed)
 
 # best parameters are obtained from separate long running script
-model2 = XGBRegressor(
+model = XGBRegressor(
   nthreads=-1,
   subsample=0.5,
   n_estimators=1000,
@@ -139,12 +137,12 @@ model2 = XGBRegressor(
   colsample_bylevel=0.4
 )
 
-model2.fit(X_train, y_train)
-y_pred = model2.predict(X_test)
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
 pred_errors = mean_absolute_error(y_test, y_pred)
 print("mean absolute error (scaled): %.2f " % pred_errors)
 
-print(model2)
+print(model)
 
 y_pred_normal = scalerY.inverse_transform(y_pred)
 print("Predicted prices (training)")
@@ -157,11 +155,11 @@ print(y_test_normal)
 mape = mean(abs((y_test_normal - y_pred_normal)/y_test_normal))
 
 print("MAPE (normal value): %.5f%%" % (mape * 100.0))
-plot_importance(model2)
+plot_importance(model)
 pyplot.show() 
 
 actual_test = test_data.values[:, 1:4]
-actual_pred = model2.predict(actual_test)
+actual_pred = model.predict(actual_test)
 actual_pred_normal = scalerY.inverse_transform(actual_pred)
 print("Predicted prices (to submit)")
 print(actual_pred_normal)
