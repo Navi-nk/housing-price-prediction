@@ -7,6 +7,18 @@
 # from terminal type:
 #   py singapore_house_price_predictor
 # 
+# References:
+# http://danielhnyk.cz/how-to-use-xgboost-in-python/
+# https://jessesw.com/XG-Boost/ 
+# https://no2147483647.wordpress.com/2014/09/17/winning-solution-of-kaggle-higgs-competition-what-a-single-model-can-do/
+# http://www.codeastar.com/win-big-real-estate-market-data-science/
+# https://medium.com/@blazetamareborn/practicing-regression-techniques-on-house-prices-dataset-part-1-7266aec8b7d3
+# https://machinelearningmastery.com/configure-gradient-boosting-algorithm/
+# https://machinelearningmastery.com/ensemble-machine-learning-algorithms-python-scikit-learn/
+# http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RandomizedSearchCV.html
+# https://pandas.pydata.org/pandas-docs/stable/merging.html#appending-rows-to-a-dataframe
+# 
+
 import numpy as np 
 import pandas as pd 
 import seaborn as sn 
@@ -42,11 +54,12 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.ensemble import AdaBoostRegressor
 from xgboost import XGBRegressor
+from xgboost import plot_importance
 
 hdb_train_file = 'data/hdb_train.csv'
 hdb_test_file = 'data/hdb_test.csv'
 
-private_train_file = 'private_train_2.csv'
+private_train_file = 'data/private_train_2.csv'
 private_test_file = 'data/private_test.csv'
 
 def explore(dataset_name, dataset_to_explore):
@@ -461,6 +474,8 @@ def preprocess_private_features(data):
       pd.DataFrame(unit_num_hashed.toarray())
     ],
     axis=1)
+
+  features["floor_area_sqm"] = boxcox1p(features["floor_area_sqm"], 0.1)
   
   print("Shape of preprocessed data (after feature hashing):")
   print(features.shape)
@@ -541,7 +556,7 @@ def evaluate_ensemble_algorithms(num_folds, seed, scoring, X_train, Y_train):
   ax.set_xticklabels(names)
   plt.show()
 
-def tune_gbm(n_estimators, max_depth, param_grid, seed, scoring, kfold, X_train, Y_train):
+def tune_gbm(param_grid, seed, scoring, kfold, X_train, Y_train):
   model = GradientBoostingRegressor(random_state=seed)
   grid = RandomizedSearchCV(estimator=model, param_distributions=param_grid, scoring=scoring, cv=kfold)
   grid_results = grid.fit(X_train, Y_train)
@@ -554,7 +569,7 @@ def tune_gbm(n_estimators, max_depth, param_grid, seed, scoring, kfold, X_train,
   for mean, stdev, param in zip(means, stds, params):
     print("%f (%f) with: %r" %  (mean, stdev, param))
 
-def tune_xgb(n_estimators, max_depth, param_grid, scoring, kfold, X_train, Y_train):
+def tune_xgb(param_grid, scoring, kfold, X_train, Y_train):
   model = XGBRegressor()
   grid = RandomizedSearchCV(estimator=model, param_distributions=param_grid, scoring=scoring, cv=kfold)
   grid_results = grid.fit(X_train, Y_train)
@@ -606,8 +621,7 @@ def predict_hdb():
     data_2015,
     data_2016,
     data_2017
-  ])
-  #.head(100)
+  ])#.head(50)
 
   prices = preprocess_price(data["resale_price"])
   features = preprocess_hdb_features(data)
@@ -630,31 +644,36 @@ def predict_hdb():
   # evaluate_ensemble_algorithms(num_folds=num_folds, seed=seed, scoring=scoring, X_train=X_train, Y_train=Y_train)
 
   # tune algorithms
-  n_estimators = [100, 500, 1000]
+  n_estimators = [100, 500, 1000, 2000, 3000]
   max_depth = [4,6,8,10]
-  param_grid = dict(n_estimators=n_estimators, max_depth=max_depth)
+  learning_rate = [0.0001, 0.001, 0.01, 0.1, 0.2]
+  param_grid = dict(n_estimators=n_estimators, max_depth=max_depth, learning_rate=learning_rate)
   kfold = KFold(n_splits=num_folds, random_state=seed)
   
-  # tune_gbm(n_estimators=n_estimators, 
-  #   max_depth=max_depth,
+  # tune_gbm(
   #   param_grid=param_grid,
   #   seed=seed,
   #   scoring=scoring,
   #   kfold=kfold,
   #   X_train=X_train,
-  #   Y_train=Y_train)
+  #   Y_train=Y_train
+  # )
   
-  # tune_xgb(n_estimators=n_estimators, 
-  #   max_depth=max_depth,
+  # tune_xgb(
   #   param_grid=param_grid,
-  #   scoring=scoring,
   #   kfold=kfold,
+  #   scoring=scoring,
   #   X_train=X_train,
-  #   Y_train=Y_train)
+  #   Y_train=Y_train
+  # )
 
   # predict with best parameters
   # model = GradientBoostingRegressor(n_estimators=500, max_depth=6) 
-  model = XGBRegressor(n_estimators=1000, max_depth=6) 
+  model = XGBRegressor(
+    nthreads=-1, 
+    n_estimators=1000, 
+    max_depth=6,
+    learning_rate=0.1) 
 
   test_data = pd.read_csv(hdb_test_file)
   test_features = preprocess_hdb_features(test_data)
@@ -673,20 +692,26 @@ def predict_hdb():
 
   test_data.to_csv('hdb_predicted.csv',index=False)
 
+  # plot_importance(model)
+  # plt.show() 
+
 
 def predict_private():
   all_data = pd.read_csv(private_train_file)
 
+  data_2013 = all_data[all_data.month.str.contains('2013')]
+  data_2014 = all_data[all_data.month.str.contains('2014')]
   data_2015 = all_data[all_data.month.str.contains('2015')]
   data_2016 = all_data[all_data.month.str.contains('2016')]
   data_2017 = all_data[all_data.month.str.contains('2017')]
   
   data = pd.concat([
+    data_2013,
+    data_2014,
     data_2015,
     data_2016,
     data_2017
   ])
-  #.head(100)
 
   prices = preprocess_price(data["price"])
   features = preprocess_private_features(data)
@@ -709,31 +734,37 @@ def predict_private():
   # evaluate_ensemble_algorithms(num_folds=num_folds, seed=seed, scoring=scoring, X_train=X_train, Y_train=Y_train)
 
   # tune algorithms
-  # n_estimators = [100,300,500,700,1000]
-  # max_depth = [6,8,10]
-  # param_grid = dict(n_estimators=n_estimators, max_depth=max_depth)
-  # kfold = KFold(n_splits=num_folds, random_state=seed)
+  n_estimators = [100, 500, 1000, 2000, 3000]
+  max_depth = [4,6,8,10]
+  learning_rate = [0.0001, 0.001, 0.01, 0.1, 0.2]
+  param_grid = dict(n_estimators=n_estimators, max_depth=max_depth, learning_rate=learning_rate)
+  kfold = KFold(n_splits=num_folds, random_state=seed)
   
-  # tune_gbm(n_estimators=n_estimators, 
-  #   max_depth=max_depth,
+  # tune_gbm(
   #   param_grid=param_grid,
   #   seed=seed,
   #   scoring=scoring,
   #   kfold=kfold,
   #   X_train=X_train,
-  #   Y_train=Y_train)
+  #   Y_train=Y_train
+  # )
   
-  # tune_xgb(n_estimators=n_estimators, 
-  #   max_depth=max_depth,
+  # tune_xgb(
   #   param_grid=param_grid,
   #   scoring=scoring,
   #   kfold=kfold,
   #   X_train=X_train,
-  #   Y_train=Y_train)
+  #   Y_train=Y_train
+  # )
 
   # predict with best parameters
   # model = GradientBoostingRegressor(n_estimators=500, max_depth=6) 
-  model = XGBRegressor(n_estimators=1000, max_depth=6) 
+  model = XGBRegressor(
+    nthreads=-1, 
+    n_estimators=4000, 
+    max_depth=6,
+    learning_rate=0.1
+  ) 
 
   test_data = pd.read_csv(private_test_file)
   test_features = preprocess_private_features(test_data)
@@ -752,6 +783,8 @@ def predict_private():
 
   test_data.to_csv('private_predicted.csv',index=False)
 
+  # plot_importance(model)
+  # plt.show() 
 
 
 # explore_hdb()
